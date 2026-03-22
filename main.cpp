@@ -1,9 +1,33 @@
 #include <Fl/Fl.H>
-#include <Fl/Fl_Window.H>
+#include <Fl/Fl_Double_Window.H>
+#include <Fl/Fl_Text_Editor.H>
+#include <Fl/Fl_Text_Buffer.H>
+
+Fl_Text_Buffer *textbuf;
+
+class EditorWindow : public Fl_Double_Window {
+public:
+    Fl_Text_Editor *editor;
+
+    EditorWindow(int width, int height, const char* title ) : Fl_Double_Window(width, height, title) {
+        editor = new Fl_Text_Editor(0, 0, width, height);
+
+        // attach buffer
+        editor->buffer(textbuf);
+
+        //monospace font
+        editor->textfont(FL_COURIER);
+
+        end();
+    }
+
+    ~EditorWindow() {};
+};
 
 int main() {
-    Fl_Window *window = new Fl_Window(400, 300, "Test Window");
-    window->end();
+    textbuf = new Fl_Text_Buffer; // initialize buffer
+    EditorWindow *window = new EditorWindow(600, 400, "Simple Text Editor");
+    
     window->show();
-    return Fl::run();
-}
+    return Fl::run(); // start event loop
+} 

@@ -6,16 +6,21 @@
 
 Fl_Text_Buffer *textbuf;
 
-// callbacks
-void new_cb(Fl_Widget*, void*) {}
-void open_cb(Fl_Widget*, void*) {}
-void save_cb(Fl_Widget*, void*) {}
-void quit_cb(Fl_Widget*, void*) {}
+// forward declare class
+class EditorWindow;
 
-void copy_cb(Fl_Widget*, void*) {}
-void cut_cb(Fl_Widget*, void*) {}
-void paste_cb(Fl_Widget*, void*) {}
-void find_cb(Fl_Widget*, void*) {}
+// forward declare callbacks
+void new_cb(Fl_Widget*, void*);
+void open_cb(Fl_Widget*, void*);
+void save_cb(Fl_Widget*, void*);
+void quit_cb(Fl_Widget*, void*);
+
+void copy_cb(Fl_Widget*, void*);
+void cut_cb(Fl_Widget*, void*);
+void paste_cb(Fl_Widget*, void*);
+void delete_cb(Fl_Widget*, void*);
+
+void find_cb(Fl_Widget*, void*);
 
 /* 
 { 0 } marks end of the submenu
@@ -43,6 +48,7 @@ Fl_Menu_Item menuItems[] = {
         { "Cu&t", FL_CTRL + 'x', (Fl_Callback*)cut_cb },
         { "&Paste", FL_CTRL + 'v', (Fl_Callback*)paste_cb },
         { "&Copy", FL_CTRL + 'c', (Fl_Callback*)copy_cb },
+        { "&Delete", FL_CTRL + 'd', (Fl_Callback*)delete_cb},
     { 0 },
 
     { "&Search", 0, 0, 0, FL_SUBMENU },
@@ -60,6 +66,8 @@ public:
     EditorWindow(int width, int height, const char* title ) : Fl_Double_Window(width, height, title) {
         menu = new Fl_Menu_Bar(0, 0, width, 30);
         menu->copy(menuItems);
+        // passing editor window so that menu callback can access it
+        menu->user_data(this);
 
         editor = new Fl_Text_Editor(0, 30, width, height - 30);
         editor->buffer(textbuf);
@@ -70,6 +78,33 @@ public:
 
     ~EditorWindow() {};
 };
+
+void new_cb(Fl_Widget*, void*) {}
+void open_cb(Fl_Widget*, void*) {}
+void save_cb(Fl_Widget*, void*) {}
+void quit_cb(Fl_Widget*, void*) {}
+
+void copy_cb(Fl_Widget*, void* v) {
+    EditorWindow* editorWindow = (EditorWindow*)v;
+    Fl_Text_Editor::kf_copy(0, editorWindow->editor);
+}
+
+void cut_cb(Fl_Widget*, void* v) {
+    EditorWindow* editorWindow = (EditorWindow*)v;
+    Fl_Text_Editor::kf_cut(0, editorWindow->editor);
+}
+
+void paste_cb(Fl_Widget*, void* v) {
+    EditorWindow* editorWindow = (EditorWindow*)v;
+    Fl_Text_Editor::kf_paste(0, editorWindow->editor);
+}
+
+void delete_cb(Fl_Widget*, void*) {
+    textbuf->remove_selection();
+}
+
+void find_cb(Fl_Widget*, void*) {}
+
 
 int main() {
     textbuf = new Fl_Text_Buffer; // initialize buffer

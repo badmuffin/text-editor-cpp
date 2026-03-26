@@ -3,29 +3,68 @@
 #include <Fl/Fl_Text_Editor.H>
 #include <Fl/Fl_Text_Buffer.H>
 #include <Fl/Fl_Menu_Bar.H>
+#include <Fl/fl_ask.H>
+#include <Fl/Fl_File_Chooser.H>
 
 Fl_Text_Buffer *textbuf;
 
-// forward declare class
+char fileName[256] = "";
+int changed = 0; // flag if file is modified and not saved
+int loading = 0; // loading flag, used when interacting with files
+
 class EditorWindow;
 
-// forward declare callbacks
-void new_cb(Fl_Widget*, void*);
-void open_cb(Fl_Widget*, void*);
-void save_cb(Fl_Widget*, void*);
-void quit_cb(Fl_Widget*, void*);
+void new_cb(Fl_Widget *, void *);
+void open_cb(Fl_Widget *, void *);
+void save_cb(Fl_Widget *, void *);
+void quit_cb(Fl_Widget *, void *);
 
-void copy_cb(Fl_Widget*, void*);
-void cut_cb(Fl_Widget*, void*);
-void paste_cb(Fl_Widget*, void*);
-void delete_cb(Fl_Widget*, void*);
+void copy_cb(Fl_Widget *, void *);
+void cut_cb(Fl_Widget *, void *);
+void paste_cb(Fl_Widget *, void *);
+void delete_cb(Fl_Widget *, void *);
 
-void find_cb(Fl_Widget*, void*);
+void find_cb(Fl_Widget *, void *);
 
-/* 
+void load_file(const char *newfile)
+{
+    loading = 1;
+
+    if (textbuf->loadfile(newfile))
+        fl_alert("Error opening file!");
+    else
+    {
+        strcpy(fileName, newfile);
+        changed = 0;
+    }
+
+    loading = 0;
+}
+
+void save_file(const char *newfile)
+{
+    if (textbuf->savefile(newfile))
+        fl_alert("Error saving file!");
+    else
+    {
+        strcpy(fileName, newfile);
+        changed = 0;
+    }
+}
+
+void changed_cb(int, int nInserted, int nDeleted, int, const char *, void *)
+{
+    if (loading)
+        return;
+
+    if (nInserted || nDeleted)
+        changed = 1;
+}
+
+/*
 { 0 } marks end of the submenu
 "&t" means t with underline
- 
+
 internal structure of Menu Items
 struct Fl_Menu_Item {
     const char* text;      // label
@@ -37,33 +76,34 @@ struct Fl_Menu_Item {
 */
 
 Fl_Menu_Item menuItems[] = {
-    { "&File", 0, 0, 0, FL_SUBMENU },
-        { "&New File", FL_CTRL + 'n', (Fl_Callback*)new_cb },
-        { "&Open File...", FL_CTRL + 'o', (Fl_Callback*)open_cb },
-        { "&Save File", FL_CTRL + 's', (Fl_Callback*)save_cb },
-        { "E&xit", FL_CTRL + 'q', (Fl_Callback*)quit_cb },
-    { 0 },
+    {"&File", 0, 0, 0, FL_SUBMENU},
+    {"&New File", FL_CTRL + 'n', (Fl_Callback *)new_cb},
+    {"&Open File...", FL_CTRL + 'o', (Fl_Callback *)open_cb},
+    {"&Save File", FL_CTRL + 's', (Fl_Callback *)save_cb},
+    {"E&xit", FL_CTRL + 'q', (Fl_Callback *)quit_cb},
+    {0},
 
-    { "&Edit", 0, 0, 0, FL_SUBMENU },
-        { "Cu&t", FL_CTRL + 'x', (Fl_Callback*)cut_cb },
-        { "&Paste", FL_CTRL + 'v', (Fl_Callback*)paste_cb },
-        { "&Copy", FL_CTRL + 'c', (Fl_Callback*)copy_cb },
-        { "&Delete", FL_CTRL + 'd', (Fl_Callback*)delete_cb},
-    { 0 },
+    {"&Edit", 0, 0, 0, FL_SUBMENU},
+    {"Cu&t", FL_CTRL + 'x', (Fl_Callback *)cut_cb},
+    {"&Paste", FL_CTRL + 'v', (Fl_Callback *)paste_cb},
+    {"&Copy", FL_CTRL + 'c', (Fl_Callback *)copy_cb},
+    {"&Delete", FL_CTRL + 'd', (Fl_Callback *)delete_cb},
+    {0},
 
-    { "&Search", 0, 0, 0, FL_SUBMENU },
-        { "&Find...", FL_CTRL + 'f', (Fl_Callback*)find_cb },
-    { 0 },
+    {"&Search", 0, 0, 0, FL_SUBMENU},
+    {"&Find...", FL_CTRL + 'f', (Fl_Callback *)find_cb},
+    {0},
 
-    { 0 }
-};
+    {0}};
 
-class EditorWindow : public Fl_Double_Window {
+class EditorWindow : public Fl_Double_Window
+{
 public:
     Fl_Text_Editor *editor;
     Fl_Menu_Bar *menu;
 
-    EditorWindow(int width, int height, const char* title ) : Fl_Double_Window(width, height, title) {
+    EditorWindow(int width, int height, const char *title) : Fl_Double_Window(width, height, title)
+    {
         menu = new Fl_Menu_Bar(0, 0, width, 30);
         menu->copy(menuItems);
         // passing editor window so that menu callback can access it
@@ -73,43 +113,87 @@ public:
         editor->buffer(textbuf);
         editor->textfont(FL_COURIER);
 
+        textbuf->add_modify_callback(changed_cb, nullptr);
+
         end();
     }
 
     ~EditorWindow() {};
 };
 
-void new_cb(Fl_Widget*, void*) {}
-void open_cb(Fl_Widget*, void*) {}
-void save_cb(Fl_Widget*, void*) {}
-void quit_cb(Fl_Widget*, void*) {}
+void new_cb(Fl_Widget *, void *)
+{
+    textbuf->select(0, textbuf->length());
+    textbuf->remove_selection();
 
-void copy_cb(Fl_Widget*, void* v) {
-    EditorWindow* editorWindow = (EditorWindow*)v;
+    fileName[0] = '\0';
+    changed = 0;
+}
+
+void open_cb(Fl_Widget *, void *)
+{
+    const char *newfile = fl_file_chooser("Open file", "*", fileName);
+    if (newfile != nullptr)
+        load_file(newfile);
+}
+
+// if filename not exist, ask user Save As, otherwise overwrite existing file
+void save_cb(Fl_Widget *, void *)
+{
+    if (fileName[0] == '\0')
+    {
+        const char *newfile = fl_file_chooser("Save File As", "*", fileName);
+        if (newfile != nullptr)
+            save_file(newfile);
+    }
+    else
+        save_file(fileName);
+}
+
+void quit_cb(Fl_Widget *, void *)
+{
+    if (changed)
+    {
+        int r = fl_choice("File not saved.\nSave before exit?", "Cancel", "Save", "Discard");
+        if (r == 1)
+            save_cb(nullptr, nullptr);
+        else if (r == 0)
+            return;
+    }
+
+    exit(0);
+}
+
+void copy_cb(Fl_Widget *, void *v)
+{
+    EditorWindow *editorWindow = (EditorWindow *)v;
     Fl_Text_Editor::kf_copy(0, editorWindow->editor);
 }
 
-void cut_cb(Fl_Widget*, void* v) {
-    EditorWindow* editorWindow = (EditorWindow*)v;
+void cut_cb(Fl_Widget *, void *v)
+{
+    EditorWindow *editorWindow = (EditorWindow *)v;
     Fl_Text_Editor::kf_cut(0, editorWindow->editor);
 }
 
-void paste_cb(Fl_Widget*, void* v) {
-    EditorWindow* editorWindow = (EditorWindow*)v;
+void paste_cb(Fl_Widget *, void *v)
+{
+    EditorWindow *editorWindow = (EditorWindow *)v;
     Fl_Text_Editor::kf_paste(0, editorWindow->editor);
 }
 
-void delete_cb(Fl_Widget*, void*) {
+void delete_cb(Fl_Widget *, void *)
+{
     textbuf->remove_selection();
 }
 
-void find_cb(Fl_Widget*, void*) {}
+void find_cb(Fl_Widget *, void *) {}
 
-
-int main() {
+int main()
+{
     textbuf = new Fl_Text_Buffer; // initialize buffer
     EditorWindow *window = new EditorWindow(600, 400, "Simple Text Editor");
-    
+
     window->show();
     return Fl::run(); // start event loop
-} 
+}

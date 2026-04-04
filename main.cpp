@@ -217,6 +217,12 @@ void find2_cb(Fl_Widget *w, void *v)
     int insertPos = editorWindow->editor->insert_position();
     int found = textbuf->search_forward(insertPos, editorWindow->search, &insertPos);
 
+    if (!found)
+    {
+        insertPos = 0;
+        found = textbuf->search_forward(insertPos, editorWindow->search, &insertPos);
+    }
+
     if (found)
     {
         textbuf->select(insertPos, insertPos + strlen(editorWindow->search));

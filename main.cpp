@@ -25,6 +25,7 @@ void paste_cb(Fl_Widget *, void *);
 void delete_cb(Fl_Widget *, void *);
 
 void find_cb(Fl_Widget *, void *);
+void find2_cb(Fl_Widget *, void *);
 
 void load_file(const char *newfile)
 {
@@ -92,6 +93,7 @@ Fl_Menu_Item menuItems[] = {
 
     {"&Search", 0, 0, 0, FL_SUBMENU},
     {"&Find...", FL_CTRL + 'f', (Fl_Callback *)find_cb},
+    {"F&ind Again", FL_CTRL + 'g', (Fl_Callback *)find2_cb},
     {0},
 
     {0}};
@@ -101,6 +103,7 @@ class EditorWindow : public Fl_Double_Window
 public:
     Fl_Text_Editor *editor;
     Fl_Menu_Bar *menu;
+    char search[256];
 
     EditorWindow(int width, int height, const char *title) : Fl_Double_Window(width, height, title)
     {
@@ -112,6 +115,8 @@ public:
         editor = new Fl_Text_Editor(0, 30, width, height - 30);
         editor->buffer(textbuf);
         editor->textfont(FL_COURIER);
+
+        search[0] = '\0';
 
         textbuf->add_modify_callback(changed_cb, nullptr);
 
@@ -164,21 +169,21 @@ void quit_cb(Fl_Widget *, void *)
     exit(0);
 }
 
-void copy_cb(Fl_Widget *, void *v)
+void copy_cb(Fl_Widget *w, void *)
 {
-    EditorWindow *editorWindow = (EditorWindow *)v;
+    EditorWindow *editorWindow = (EditorWindow *)w->window();
     Fl_Text_Editor::kf_copy(0, editorWindow->editor);
 }
 
-void cut_cb(Fl_Widget *, void *v)
+void cut_cb(Fl_Widget *w, void *)
 {
-    EditorWindow *editorWindow = (EditorWindow *)v;
+    EditorWindow *editorWindow = (EditorWindow *)w->window();
     Fl_Text_Editor::kf_cut(0, editorWindow->editor);
 }
 
-void paste_cb(Fl_Widget *, void *v)
+void paste_cb(Fl_Widget *w, void *)
 {
-    EditorWindow *editorWindow = (EditorWindow *)v;
+    EditorWindow *editorWindow = (EditorWindow *)w->window();
     Fl_Text_Editor::kf_paste(0, editorWindow->editor);
 }
 
@@ -187,12 +192,45 @@ void delete_cb(Fl_Widget *, void *)
     textbuf->remove_selection();
 }
 
-void find_cb(Fl_Widget *, void *) {}
+void find_cb(Fl_Widget *w, void *v)
+{
+    EditorWindow *editorWindow = (EditorWindow *)w->window();
+    const char *val = fl_input("Search string ", editorWindow->search);
+
+    if (val != nullptr)
+    {
+        strcpy(editorWindow->search, val);
+        find2_cb(w, v);
+    }
+}
+
+void find2_cb(Fl_Widget *w, void *v)
+{
+    EditorWindow *editorWindow = (EditorWindow *)w->window();
+
+    if (editorWindow->search[0] == '\0')
+    {
+        find_cb(w, v);
+        return;
+    }
+
+    int insertPos = editorWindow->editor->insert_position();
+    int found = textbuf->search_forward(insertPos, editorWindow->search, &insertPos);
+
+    if (found)
+    {
+        textbuf->select(insertPos, insertPos + strlen(editorWindow->search));
+        editorWindow->editor->insert_position(insertPos + strlen(editorWindow->search));
+        editorWindow->editor->show_insert_position();
+    }
+    else
+        fl_alert("No occurrences of '%s' found!", editorWindow->search);
+}
 
 int main()
 {
     textbuf = new Fl_Text_Buffer; // initialize buffer
-    EditorWindow *window = new EditorWindow(600, 400, "Simple Text Editor");
+    EditorWindow *window = new EditorWindow(1000, 800, "Simple Text Editor");
 
     window->show();
     return Fl::run(); // start event loop

@@ -5,6 +5,8 @@
 #include <Fl/Fl_Menu_Bar.H>
 #include <Fl/fl_ask.H>
 #include <Fl/Fl_File_Chooser.H>
+#include <Fl/Fl_Input.H>
+#include <Fl/Fl_Button.H>
 
 Fl_Text_Buffer *textbuf;
 
@@ -26,6 +28,11 @@ void delete_cb(Fl_Widget *, void *);
 
 void find_cb(Fl_Widget *, void *);
 void find2_cb(Fl_Widget *, void *);
+
+void replace_cb(Fl_Widget *, void *);
+void replace_next_cb(Fl_Widget *, void *);
+void replace_all_cb(Fl_Widget *, void *);
+void replace_cancel_cb(Fl_Widget *, void *);
 
 void load_file(const char *newfile)
 {
@@ -94,6 +101,7 @@ Fl_Menu_Item menuItems[] = {
     {"&Search", 0, 0, 0, FL_SUBMENU},
     {"&Find...", FL_CTRL + 'f', (Fl_Callback *)find_cb},
     {"F&ind Again", FL_CTRL + 'g', (Fl_Callback *)find2_cb},
+    {"&Replace", FL_CTRL + 'r', (Fl_Callback *)replace_cb},
     {0},
 
     {0}};
@@ -104,6 +112,13 @@ public:
     Fl_Text_Editor *editor;
     Fl_Menu_Bar *menu;
     char search[256];
+
+    Fl_Window *replace_dialog;
+    Fl_Input *replace_find;
+    Fl_Input *replace_with;
+    Fl_Button *replace_cancel;
+    Fl_Button *replace_all;
+    Fl_Button *replace_next;
 
     EditorWindow(int width, int height, const char *title) : Fl_Double_Window(width, height, title)
     {
@@ -117,9 +132,21 @@ public:
         editor->textfont(FL_COURIER);
 
         search[0] = '\0';
-
         textbuf->add_modify_callback(changed_cb, nullptr);
 
+        replace_dialog = new Fl_Window(300, 130, "Replace");
+        replace_find = new Fl_Input(80, 10, 200, 25, "Find:");
+        replace_with = new Fl_Input(80, 40, 200, 25, "Replace:");
+
+        replace_next = new Fl_Button(10, 80, 90, 30, "Replace");
+        replace_all = new Fl_Button(105, 80, 90, 30, "All");
+        replace_cancel = new Fl_Button(200, 80, 80, 30, "Cancel");
+
+        replace_next->callback(replace_next_cb, this);
+        replace_all->callback(replace_all_cb, this);
+        replace_cancel->callback(replace_cancel_cb, this);
+
+        replace_dialog->end();
         end();
     }
 
@@ -231,6 +258,38 @@ void find2_cb(Fl_Widget *w, void *v)
     }
     else
         fl_alert("No occurrences of '%s' found!", editorWindow->search);
+}
+
+void replace_cb(Fl_Widget *w, void *v)
+{
+    EditorWindow *editorWindow = (EditorWindow *)w->window();
+    editorWindow->replace_dialog->show();
+}
+
+void replace_next_cb(Fl_Widget *, void *v)
+{
+    EditorWindow *editorWindow = (EditorWindow *)v;
+
+    const char *find = editorWindow->replace_find->value();
+    const char *replace = editorWindow->replace_with->value();
+
+    if (!find || !*find)
+        return;
+
+    int pos = editorWindow->editor->insert_position();
+    int found = textbuf->search_forward(pos, find, &pos);
+
+    if (found)
+    {
+        textbuf->select(pos, pos + strlen(find));
+        textbuf->remove_selection();
+        textbuf->insert(pos, replace);
+
+        editorWindow->editor->insert_position(pos + strlen(replace));
+        editorWindow->editor->show_insert_position();
+    }
+    else
+        fl_alert("No more occurrences!");
 }
 
 int main()

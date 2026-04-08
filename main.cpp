@@ -132,7 +132,7 @@ public:
         editor->textfont(FL_COURIER);
 
         search[0] = '\0';
-        textbuf->add_modify_callback(changed_cb, nullptr);
+        textbuf->add_modify_callback(changed_cb, this);
 
         replace_dialog = new Fl_Window(300, 130, "Replace");
         replace_find = new Fl_Input(80, 10, 200, 25, "Find:");
@@ -279,6 +279,12 @@ void replace_next_cb(Fl_Widget *, void *v)
     int pos = editorWindow->editor->insert_position();
     int found = textbuf->search_forward(pos, find, &pos);
 
+    if (!found)
+    {
+        pos = 0;
+        found = textbuf->search_forward(pos, find, &pos);
+    }
+
     if (found)
     {
         textbuf->select(pos, pos + strlen(find));
@@ -290,6 +296,38 @@ void replace_next_cb(Fl_Widget *, void *v)
     }
     else
         fl_alert("No more occurrences!");
+}
+
+void replace_all_cb(Fl_Widget *, void *v)
+{
+    EditorWindow *editorWindow = (EditorWindow *)v;
+
+    const char *find = editorWindow->replace_find->value();
+    const char *replace = editorWindow->replace_with->value();
+
+    if (!find || !*find)
+        return;
+
+    int pos = 0;
+    int count = 0;
+
+    while (textbuf->search_forward(pos, find, &pos))
+    {
+        textbuf->select(pos, pos + strlen(find));
+        textbuf->remove_selection();
+        textbuf->insert(pos, replace);
+
+        pos += strlen(replace);
+        count++;
+    }
+
+    fl_message("Replaced %d occurrences", count);
+}
+
+void replace_cancel_cb(Fl_Widget *, void *v)
+{
+    EditorWindow *editorWindow = (EditorWindow *)v;
+    editorWindow->replace_dialog->hide();
 }
 
 int main()

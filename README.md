@@ -38,5 +38,5 @@ fltk-config --compile main.cpp
 
 Step 3: Run the application
 ```Bash
-./main or make run
+./main
 ```

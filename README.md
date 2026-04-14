@@ -2,6 +2,8 @@
 
 A lightweight C++ text editor built with FLTK (Fast Light Toolkit).
 
+https://github.com/user-attachments/assets/0a52e78c-0bd6-46e0-9770-5210e13a685d
+
 ### Features
 
 #### File Operations

@@ -24,5 +24,3 @@ A lightweight C++ text editor built with FLTK (Fast Light Toolkit).
 - Find Again (Ctrl+G) - Repeat last search
 - Replace (Ctrl+R) - Replace text content
 
-#### Demo Video
-[Demo](./text-editor-demo.mp4)

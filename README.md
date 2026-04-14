@@ -24,3 +24,19 @@ A lightweight C++ text editor built with FLTK (Fast Light Toolkit).
 - Find Again (Ctrl+G) - Repeat last search
 - Replace (Ctrl+R) - Replace text content
 
+### How to Run
+Step 1: Install FLTK
+```Bash
+sudo apt install libfltk1.3-dev
+```
+
+Step 2: Compile the project
+```Bash
+fltk-config --compile main.cpp
+```
+
+
+Step 3: Run the application
+```Bash
+./main or make run
+```

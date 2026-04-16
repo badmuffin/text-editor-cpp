@@ -60,6 +60,9 @@ void save_file(const char *newfile)
     }
 }
 
+// these params are passed by fltk, we just have to create a callback which matched the 
+// expected callback signature 
+// void my_callback(int, int ins, int del, int, const char*, void*) 
 void changed_cb(int, int nInserted, int nDeleted, int, const char *, void *)
 {
     if (loading)
@@ -81,6 +84,13 @@ struct Fl_Menu_Item {
     void* user_data;       // extra data
     int flags;             // behavior
 };
+*/
+
+/*
+FLTK calls your callback as callback_name(w, v) (let's find_cb) where:
+
+- w is the widget that triggered the event
+- v is the user data (usually nullptr unless explicitly set)
 */
 
 Fl_Menu_Item menuItems[] = {
@@ -131,7 +141,13 @@ public:
         editor->buffer(textbuf);
         editor->textfont(FL_COURIER);
 
+        resizable(editor);
+        editor->color(FL_BLACK);
+        editor->textcolor(FL_WHITE);
+        editor->cursor_color(FL_WHITE);
+
         search[0] = '\0';
+        // fltk call changed_cb everytime when text buffer is modified
         textbuf->add_modify_callback(changed_cb, this);
 
         replace_dialog = new Fl_Window(300, 130, "Replace");
@@ -272,26 +288,30 @@ void replace_next_cb(Fl_Widget *, void *v)
 
     const char *find = editorWindow->replace_find->value();
     const char *replace = editorWindow->replace_with->value();
-
+    
+    // !*find means string is empty ("")
     if (!find || !*find)
         return;
 
-    int pos = editorWindow->editor->insert_position();
-    int found = textbuf->search_forward(pos, find, &pos);
+    int cursorPosition = editorWindow->editor->insert_position();
+    int found = textbuf->search_forward(cursorPosition, find, &cursorPosition);
 
+    // if not found from the cursor, search from the beginning
     if (!found)
     {
-        pos = 0;
-        found = textbuf->search_forward(pos, find, &pos);
+        cursorPosition = 0;
+        found = textbuf->search_forward(cursorPosition, find, &cursorPosition);
     }
 
     if (found)
     {
-        textbuf->select(pos, pos + strlen(find));
-        textbuf->remove_selection();
-        textbuf->insert(pos, replace);
+        textbuf->select(cursorPosition, cursorPosition + strlen(find));
+        textbuf->remove_selection(); // deleting the selected text
+        textbuf->insert(cursorPosition, replace); // inserting the new text
 
-        editorWindow->editor->insert_position(pos + strlen(replace));
+        // move cursor ahead of the inserted text
+        editorWindow->editor->insert_position(cursorPosition + strlen(replace));
+        // ensure cursor is visible
         editorWindow->editor->show_insert_position();
     }
     else
@@ -308,16 +328,16 @@ void replace_all_cb(Fl_Widget *, void *v)
     if (!find || !*find)
         return;
 
-    int pos = 0;
+    int cursorPosition = 0;
     int count = 0;
 
-    while (textbuf->search_forward(pos, find, &pos))
+    while (textbuf->search_forward(cursorPosition, find, &cursorPosition))
     {
-        textbuf->select(pos, pos + strlen(find));
+        textbuf->select(cursorPosition, cursorPosition + strlen(find));
         textbuf->remove_selection();
-        textbuf->insert(pos, replace);
+        textbuf->insert(cursorPosition, replace);
 
-        pos += strlen(replace);
+        cursorPosition += strlen(replace);
         count++;
     }
 

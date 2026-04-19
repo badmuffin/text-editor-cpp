@@ -27,18 +27,25 @@ https://github.com/user-attachments/assets/0a52e78c-0bd6-46e0-9770-5210e13a685d
 - Replace (Ctrl+R) - Replace text content
 
 ### How to Run
-Step 1: Install FLTK
+
+**Step 1:** Install FLTK in your system (headers file may differ based on your system)  
+**Step 2:** Compile the project  
+**Step 3:** Run the application 
+
+#### Debian
 ```Bash
 sudo apt install libfltk1.3-dev
-```
 
-Step 2: Compile the project
-```Bash
 fltk-config --compile main.cpp
+
+./main
 ```
 
-
-Step 3: Run the application
+#### Fedora 
 ```Bash
+sudo dnf install fltk fltk-devel
+
+g++ main.cpp $(shell fltk-config --cxxflags --ldflags) -o app
+
 ./main
 ```

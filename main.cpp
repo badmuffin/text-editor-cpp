@@ -1,12 +1,12 @@
-#include <Fl/Fl.H>
-#include <Fl/Fl_Double_Window.H>
-#include <Fl/Fl_Text_Editor.H>
-#include <Fl/Fl_Text_Buffer.H>
-#include <Fl/Fl_Menu_Bar.H>
-#include <Fl/fl_ask.H>
-#include <Fl/Fl_File_Chooser.H>
-#include <Fl/Fl_Input.H>
-#include <Fl/Fl_Button.H>
+#include <FL/Fl.H>
+#include <FL/Fl_Double_Window.H>
+#include <FL/Fl_Text_Editor.H>
+#include <FL/Fl_Text_Buffer.H>
+#include <FL/Fl_Menu_Bar.H>
+#include <FL/fl_ask.H>
+#include <FL/Fl_File_Chooser.H>
+#include <FL/Fl_Input.H>
+#include <FL/Fl_Button.H>
 
 Fl_Text_Buffer *textbuf;
 

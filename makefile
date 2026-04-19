@@ -1,8 +1,8 @@
 all:
-	fltk-config --compile main.cpp
+	g++ main.cpp $(shell fltk-config --cxxflags --ldflags) -o app
 
 run:
-	./main
+	./app
 
 clean:
-	rm -f main
+	rm -f app
